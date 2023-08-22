@@ -98,11 +98,14 @@ class BulletGenerator:
     Keep track of list counters and generate bullet strings.
     """
 
-    def __init__(self, numId2numFmts: dict[str, list[str]]) -> None:
+    def __init__(self, numId2numFmts: dict[str, list[str]], numId2numStarts: dict[str, list[str]]) -> None:
         """
         Set numId2numFmts. Initiate counters.
         """
         self.numId2numFmts = numId2numFmts
+        # print(f"numId2numFmts: {numId2numFmts}\n\n")
+        self.numId2numStarts = numId2numStarts
+        # print(f"numId2numStarts: {numId2numStarts}\n\n")
         self.numId2count = _new_list_counter()
 
     def get_bullet(self, paragraph: EtreeElement) -> str:
@@ -128,17 +131,30 @@ class BulletGenerator:
         bullet preceded by one tab for every indentation level.
         """
         try:
+            numStart = 1
             pPr = next(paragraph.iterfind(qn("w:pPr")))
+            # print('-------------------------')
+            # print(f"pPr: {pPr}\n")
             numPr = next(pPr.iterfind(qn("w:numPr")))
+            # print(f"numPr: {numPr}\n")
             numId = next(numPr.iterfind(qn("w:numId"))).attrib[qn("w:val")]
+            # print(f"numId: {numId}\n")
             ilvl = next(numPr.iterfind(qn("w:ilvl"))).attrib[qn("w:val")]
+            # print(f"ilvl: {ilvl}\n")
+            # print(f"numStart: {numStart} pPr: {pPr} numPr: {numPr} numId: {numId} ilvl: {ilvl}\n")
             try:
                 numFmt = self.numId2numFmts[str(numId)][int(ilvl)]
+                # print(f"numFmt: {numFmt}\n")
             except IndexError:
                 # give up and put a bullet
                 numFmt = "bullet"
+            try:
+                numStart = int(self.numId2numStarts[str(numId)][int(ilvl)])
+            except:
+                numStart = 1
         except (StopIteration, KeyError):
             # not a numbered paragraph
+            # print("not a numbered paragraph")
             return ""
 
         def format_bullet(bullet: str) -> str:
@@ -149,8 +165,11 @@ class BulletGenerator:
             """
             if bullet != nums.bullet():
                 bullet += ")"
+            lol = "\t" * int(ilvl) + bullet + "\t"
+            # print(f"bullet: {lol}\n")
             return "\t" * int(ilvl) + bullet + "\t"
 
         number = _increment_list_counter(self.numId2count[numId], str(ilvl))
         get_unformatted_bullet_str = _get_bullet_function(numFmt)
-        return format_bullet(get_unformatted_bullet_str(number))
+        # return format_bullet(get_unformatted_bullet_str(number))
+        return format_bullet(get_unformatted_bullet_str(number+numStart-1))

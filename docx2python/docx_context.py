@@ -82,6 +82,30 @@ def collect_numFmts(numFmts_root: EtreeElement) -> dict[str, list[str]]:
     return numId2numFmts
 
 
+def collect_numStarts(numFmts_root: EtreeElement) -> dict[str, list[str]]:
+    abstractNumId2numFmts: dict[str, list[str]] = {}
+
+    for abstractNum in numFmts_root.findall(qn("w:abstractNum")):
+        id_ = str(abstractNum.attrib[qn("w:abstractNumId")])
+        abstractNumId2numFmts[id_] = []
+        for lvl in abstractNum.findall(qn("w:lvl")):
+            numFmt = lvl.find(qn("w:start"))
+            if numFmt is not None:
+                abstractNumId2numFmts[id_].append(str(numFmt.attrib[qn("w:val")]))
+
+    numId2numFmts: dict[str, list[str]] = {}
+    num: EtreeElement
+    for num in (x for x in numFmts_root.findall(qn("w:num"))):
+        numId = num.attrib[qn("w:numId")]
+        abstractNumId = num.find(qn("w:abstractNumId"))
+        if abstractNumId is None:
+            continue
+        abstractNumIdval = abstractNumId.attrib.get(qn("w:val"))
+        numId2numFmts[str(numId)] = abstractNumId2numFmts[str(abstractNumIdval)]
+
+    return numId2numFmts
+
+
 def collect_rels(zipf: zipfile.ZipFile) -> dict[str, list[dict[str, str]]]:
     """
     Map file to relId to attrib

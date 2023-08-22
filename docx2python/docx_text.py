@@ -139,7 +139,8 @@ def get_text(file: File, root: EtreeElement | None = None) -> TablesList:
     want to do it. Nothing tricky here except keeping track of the text formatting.
     """
     root = root if root is not None else file.root_element
-    bullets = BulletGenerator(file.context.numId2numFmts)
+    # bullets = BulletGenerator(file.context.numId2numFmts)
+    bullets = BulletGenerator(file.context.numId2numFmts, file.context.numId2numStarts)
     # numId2count = _new_list_counter()
     tables = DepthCollector(5)
 

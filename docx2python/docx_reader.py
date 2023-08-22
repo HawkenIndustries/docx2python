@@ -36,7 +36,7 @@ from lxml import etree
 from lxml.etree import _Element as EtreeElement  # type: ignore
 
 from .attribute_register import XML2HTML_FORMATTER
-from .docx_context import collect_numFmts, collect_rels
+from .docx_context import collect_numFmts, collect_rels, collect_numStarts
 from .docx_text import get_text
 from .merge_runs import merge_elems
 
@@ -265,6 +265,7 @@ class DocxReader:
         self.__zipf: None | zipfile.ZipFile = None
         self.__files: None | list[File] = None
         self.__numId2NumFmts: None | dict[str, list[str]] = None
+        self.__numId2numStarts: None | dict[str, list[str]] = None
         self.__closed = False
 
     @property
@@ -339,6 +340,7 @@ class DocxReader:
         Ultimately, this will result in any lists (there should NOT be any lists if
         there is no word/numbering.xml) being "numbered" with "--".
         """
+        # print(f"calling numId2numFmts")
         if self.__numId2NumFmts is not None:
             return self.__numId2NumFmts
 
@@ -348,6 +350,30 @@ class DocxReader:
         except KeyError:
             self.__numId2NumFmts = {}
         return self.__numId2NumFmts
+    
+    @property
+    def numId2numStarts(self) -> dict[str, list[str]]:
+        """
+        numId referenced in xml to list of numFmt per indentation level
+
+        :return: numId referenced in xml to list of numFmt per indentation level
+
+        See docstring for collect_numFmts
+
+        Returns an empty dictionary if word/numbering.xml cannot be found.
+        Ultimately, this will result in any lists (there should NOT be any lists if
+        there is no word/numbering.xml) being "numbered" with "--".
+        """
+        # print(f"calling numId2numStarts")
+        if self.__numId2numStarts is not None:
+            return self.__numId2numStarts
+
+        try:
+            numFmts_root = etree.fromstring(self.zipf.read("word/numbering.xml"))
+            self.__numId2numStarts = collect_numStarts(numFmts_root)
+        except KeyError:
+            self.__numId2numStarts = {}
+        return self.__numId2numStarts
 
     def file_of_type(self, type_: str) -> File:
         """
